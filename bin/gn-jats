@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Convert genome note markdown to JATS XML for Wellcome Open Research submission.
+# Usage: gn-jats INPUT.md [OUTPUT.xml]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+TEMPLATES="$REPO_ROOT/templates"
+FILTERS="$REPO_ROOT/filters"
+
+input="${1:?Usage: gn-jats INPUT.md [OUTPUT.xml]}"
+output="${2:-${input%.md}.xml}"
+
+pandoc "$input" \
+  --lua-filter "$FILTERS/normalize_pandoc_inputs.lua" \
+  --filter pandoc-crossref \
+  --filter "$FILTERS/fix-figtbl-xref.py" \
+  --csl="$TEMPLATES/tol_custom-author-date.csl" \
+  --citeproc \
+  --to=jats+element_citations \
+  --template "$TEMPLATES/tol_jats_publishing.xml" \
+  | "$FILTERS/postprocess-jats.py" > "$output"

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Convert genome note markdown to DOCX for journal submission
+# (figures and tables moved to end of document).
+# Usage: gn-docx-sub INPUT.md [OUTPUT.docx]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+TEMPLATES="$REPO_ROOT/templates"
+FILTERS="$REPO_ROOT/filters"
+
+input="${1:?Usage: gn-docx-sub INPUT.md [OUTPUT.docx]}"
+output="${2:-${input%.md}_sub.docx}"
+
+pandoc "$input" \
+  --lua-filter "$FILTERS/inject_frontmatter.lua" \
+  --filter pandoc-crossref \
+  --lua-filter "$FILTERS/extract_figs_tables.lua" \
+  --citeproc \
+  --csl="$TEMPLATES/tol_custom-author-date.csl" \
+  --reference-doc "$TEMPLATES/custom-template.docx" \
+  -o "$output"

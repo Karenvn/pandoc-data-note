@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN" "http://jats.nlm.nih.gov/publishing/1.2/JATS-journalpublishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" article-type="other">
+   <front>
+        <journal-meta>
+        <journal-id journal-id-type="pmc">Wellcome Open Res</journal-id>
+		<issn pub-type="epub">2398-502X</issn>
+        </journal-meta>
+        <article-meta>
+            <article-categories>
+                <subj-group subj-group-type="heading">
+                <subject>Genome Notes</subject>
+                </subj-group>
+                <subj-group subj-group-type="terms">
+                <subject>Genetics</subject>
+                <subject content-type="primary3rdlevel">Biological sciences</subject>
+                <subject>Natural sciences</subject>
+                </subj-group>
+                <subj-group subj-group-type="f1000-category">
+                <subject>Biological Sciences</subject>
+                </subj-group>
+            </article-categories>
+<title-group>
+  <article-title>$title$</article-title>
+  $if(subtitle)$<subtitle>$subtitle$</subtitle>
+  $endif$
+</title-group>
+<contrib-group>
+<contrib contrib-type="submitter">
+<name>
+<surname>van Niekerk</surname>
+<given-names>Karen</given-names>
+</name>
+<email>tol-genome-note@sanger.ac.uk</email>
+</contrib>
+$for(author)$
+<contrib contrib-type="author" $if(author.corresp)$corresp="yes"
+$endif$>
+<name>
+<surname>$author.surname$</surname>
+<given-names>$author.given-names$</given-names>
+</name>
+$if(author.email)$
+<email>$author.email$</email>
+$endif$
+$if(author.orcid)$
+<uri content-type="orcid" xlink:href="https://orcid.org/$author.orcid$">https://orcid.org/$author.orcid$</uri>$endif$
+$if(author.roles)$
+$for(author.roles)$
+  <role content-type="http://credit.niso.org/">$if(author.roles.credit-name)$$author.roles.redit-name$$else$$author.roles.credit$$endif$</role>
+$endfor$
+$endif$
+$for(author.affiliation)$
+<xref ref-type="aff" rid="a$author.affiliation$">$author.affiliation$</xref>
+$endfor$
+</contrib>
+$endfor$
+$for(collab)$
+<contrib contrib-type="author" $if(collab.corresp)$corresp="yes"$endif$>
+<collab>$collab.name$</collab>
+$if(collab.email)$<email>$collab.email$</email>$endif$
+</contrib>
+$endfor$
+$if(affiliation)$
+$for(affiliation)$
+  <aff id="a$affiliation.id$">
+    <label>$affiliation.id$</label>
+    <institution>$affiliation.organization$</institution>
+    $if(affiliation.department)$
+      <institution content-type="dept">$affiliation.department$</institution>
+    $endif$
+    $if(affiliation.city)$  <city>$affiliation.city$</city>$endif$
+    $if(affiliation.state)$ <state>$affiliation.state$</state>$endif$
+    $if(affiliation.postcode)$ <postal-code>$affiliation.postcode$</postal-code>$endif$
+    $if(affiliation.country)$<country country="$affiliation.country$"/>$endif$
+  </aff>
+$endfor$
+$endif$
+</contrib-group>
+            <author-notes> 
+                <fn fn-type="conflict">
+                    <p>No competing interests were disclosed.</p>
+                </fn>
+            </author-notes>
+            <permissions>
+                <license xlink:href="https://creativecommons.org/licenses/by/4.0/">
+                    <license-p>This is an open access article distributed under the terms of the Creative Commons Attribution Licence, which permits unrestricted use, distribution, and reproduction in any medium, provided the original work is properly cited.</license-p>
+                </license>
+            </permissions>
+<abstract>
+${abstract}
+</abstract>
+<kwd-group kwd-group-type="author">
+$for(keywords)$
+<kwd>${keywords}</kwd>
+$endfor$
+</kwd-group>
+<funding-group>
+  $for(funder)$
+  $if(funder.name)$
+  <award-group id="fund-$funder.idx$"$if(funder.funderdoi)$ xlink:href="http://dx.doi.org/$funder.funderdoi$"$endif$>
+    <funding-source>$funder.name$</funding-source>
+    $for(funder.awards)$
+    $if(funder.awards)$<award-id>$funder.awards$</award-id>$endif$
+    $endfor$
+  </award-group>
+  $endif$
+  $endfor$
+  $if(funding_statement)$<funding-statement>$funding_statement$</funding-statement>$endif$
+  <funding-statement><italic>The funders had no role in study design, data collection and analysis, decision to publish, or preparation of the manuscript.</italic></funding-statement>
+</funding-group>
+            <custom-meta-group>
+				<custom-meta>
+					<meta-name>gateway</meta-name>
+					<meta-value>treeoflife</meta-value> <!-- Gateway area:  Darwin Tree of Life -->
+				</custom-meta>
+				<custom-meta>
+					<meta-name>articletype</meta-name>
+					<meta-value>genome-notes</meta-value>
+				</custom-meta>
+			</custom-meta-group>
+        </article-meta>
+    </front>
+<body>
+$body$
+</body>
+<back>
+  $back$
+</back>
+<sub-article article-type="reviewer-report" id="auto">
+		  <front-stub>
+			<title-group>
+			  <article-title>Reviewer response for version {version}</article-title>
+			</title-group>
+			<contrib-group>
+			  <contrib contrib-type="author">
+				<name>
+				  <surname>Benchmarking</surname>
+				  <given-names>Automated</given-names>
+				</name>
+				<xref ref-type="aff" rid="autoa1">1</xref>
+				<role>Referee</role>
+			  </contrib>
+				<aff id="autoa1">
+						<label>1</label>
+						<institution>Wellcome Sanger Institute</institution>
+						<city>Hinxton</city>
+						<country country="GB"/>
+					</aff>		
+			</contrib-group>
+			<author-notes>
+			  <fn fn-type="conflict">
+				<p>No competing interests were disclosed.</p>
+			  </fn>
+			</author-notes>
+			<pub-date pub-type="epub">
+					<day>1</day>
+					<month>1</month>
+					<year>2000</year>
+				</pub-date>
+			<permissions>
+				<license xlink:href="https://creativecommons.org/licenses/by/4.0/">
+					<license-p>This is an open access peer review report distributed under the terms of the Creative Commons Attribution Licence, which permits unrestricted use, distribution, and reproduction in any medium, provided the original work is properly cited.</license-p>
+
+				</license>
+			</permissions>		
+			<custom-meta-group>
+			  <custom-meta>
+				<meta-name>recommendation</meta-name>
+				<meta-value>approved</meta-value>
+			  </custom-meta>
+			  <custom-meta>
+				<meta-name>isAutomated</meta-name>
+				<meta-value>true</meta-value>
+			  </custom-meta>
+			</custom-meta-group>
+		  </front-stub>
+		  <body>
+			<p>Automated benchmarking refers to genome completeness metrics supplied by the Tree of Life programme at the Wellcome Sanger Institute,
+			  which includes genome contiguity, base accuracy, functional completeness (including BUSCO scoring) and chromosome status.
+			  All automated benchmarking data are provided in <xref ref-type="table" rid="T4">Table 4</xref>
+			</p>
+		  </body>
+		</sub-article>
+</article>

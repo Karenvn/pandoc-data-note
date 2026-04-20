@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Convert genome note markdown to PDF via XeLaTeX (Eisvogel template).
+# Usage: gn-pdf INPUT.md [OUTPUT.pdf]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+TEMPLATES="$REPO_ROOT/templates"
+
+input="${1:?Usage: gn-pdf INPUT.md [OUTPUT.pdf]}"
+output="${2:-${input%.md}.pdf}"
+
+pandoc "$input" \
+  --to pdf \
+  --template "$TEMPLATES/tol-eisvogel.latex" \
+  --filter pandoc-crossref \
+  --csl="$TEMPLATES/tol_custom-author-date.csl" \
+  --citeproc \
+  -V linkcolor=blue \
+  -V wellcomefontpath="$TEMPLATES/fonts/" \
+  --pdf-engine xelatex \
+  -o "$output"
