@@ -1,7 +1,7 @@
 # data_note_pandoc
 
 Pandoc filters, templates, and wrapper scripts for converting genome note
-Markdown files to DOCX, PDF, and JATS XML.
+Markdown files to docx, pdf and JATS-XML files.
 
 ## Dependencies
 
@@ -32,14 +32,14 @@ bin/gn-jats ilActPoly1.md
 
 ## Filter order
 
-Filter order is significant and must not be changed.
+Filter order matters and must not be changed.
 
 **JATS pipeline:**
 1. `normalize_pandoc_inputs.lua` — rewrites BibTeX italic markers; promotes table IDs
 2. `pandoc-crossref` — resolves `@fig:` / `@tbl:` cross-references
 3. `fix-figtbl-xref.py` — converts figure/table elements to raw JATS blocks
-4. `--citeproc` — processes citations
-5. JATS writer
+4. `--citeproc` — processes citations using BibTeX input and CSL
+5. JATS writer using Pandoc and an XML template
 6. `postprocess-jats.py` — sorts references, adds punctuation, restores italics
 
 **DOCX submission pipeline:**
@@ -57,5 +57,5 @@ Filter order is significant and must not be changed.
 ```
 bin/          wrapper scripts (gn-pdf, gn-docx-review, gn-docx-sub, gn-jats)
 filters/      Lua and Python Pandoc filters
-templates/    LaTeX template, JATS template, DOCX reference doc, CSL, fonts
+templates/    LaTeX template, JATS-XML template, DOCX reference doc, CSL, fonts
 ```
