@@ -42,7 +42,7 @@ local function dbg(...)
   if DEBUG then
     local parts = {}
     for i = 1, select('#', ...) do parts[i] = tostring(select(i, ...)) end
-    io.stderr:write(table.concat(parts, " ") .. "\n")
+    io.stderr:write(table.concat(parts, " "))
   end
 end
 
@@ -64,6 +64,41 @@ local function to_array(x)
     return { x }
   end
   return {}
+end
+
+-- Extract roles from either simple format or credit-based format
+local function extract_roles(role_data)
+  local roles = {}
+  
+  if not role_data then
+    return roles
+  end
+  
+  if type(role_data) == "table" and role_data.t == "MetaList" then
+    -- Handle list of items
+    for i = 1, #role_data do
+      local item = role_data[i]
+      if type(item) == "table" then
+        -- Check if it's an object with a 'credit' key
+        if item.credit then
+          table.insert(roles, stringify(item.credit))
+        elseif item.t == "MetaMap" and item.credit then
+          table.insert(roles, stringify(item.credit))
+        else
+          -- Fall back to stringifying the whole item
+          table.insert(roles, stringify(item))
+        end
+      else
+        -- Simple string item
+        table.insert(roles, stringify(item))
+      end
+    end
+  else
+    -- Single value or other format - use existing to_array function
+    roles = to_array(role_data)
+  end
+  
+  return roles
 end
 
 -- Build lookup: affiliation id -> "Org, Dept, City, State, Country"
@@ -104,7 +139,7 @@ local function build_aff_lookup(meta)
           end
         end
       elseif type(aff) == "table" and aff.t == "MetaMap" then
-        -- Handle YAML maps keyed by the id (e.g. affiliation: { "1": { organization: ... } })
+        -- YAML map keyed by id (affiliation: { "1": { organization: ... } })
         for k, a in pairs(aff) do
           if k ~= "t" and type(a) == "table" then
             local id = stringify(a.id or a.key or a.index or k)
@@ -217,8 +252,9 @@ local function make_frontmatter(meta)
     end
     table.insert(blocks, para_with_style(line, STYLE_NAME))
 
-    -- Roles line
-    local roles = to_array(am.role)
+    -- Roles line - now handles both simple strings and credit-based format
+    local role_data = am.roles or am.role
+    local roles = extract_roles(role_data)
     if #roles > 0 then
       table.insert(blocks, para_with_style({ pandoc.Str("Roles: " .. table.concat(roles, "; ")) }, STYLE_ROLE))
     end
@@ -263,25 +299,27 @@ local function make_frontmatter(meta)
         table.insert(blocks, para_with_style({ pandoc.Str(COLLAB_HEADING_TEXT) }, STYLE_HEADING))
       end
 
-      local dagger = "†"
+      local dagger = "† "
       for _, c in ipairs(clist) do
-        if type(c) == "table" and c.t == "MetaMap" then
-          local nm = stringify(c.name or "")
-          if nm ~= "" then
-            if is_yes(c.corresp) then nm = nm .. dagger end
-            table.insert(blocks, para_with_style({ pandoc.Str(nm) }, STYLE_COLLAB))
-          end
+        local nm, corr = "", false
+        local em = ""
+        if type(c) == "table" then
+          nm   = stringify(c.name or "")
+          corr = is_yes(c.corresp)
+          em   = c.email and stringify(c.email) or ""
         else
-          local nm = stringify(c)
-          if nm ~= "" then
-            table.insert(blocks, para_with_style({ pandoc.Str(nm) }, STYLE_COLLAB))
-          end
+          nm = stringify(c)
+        end
+        if nm ~= "" then
+          local inl = { pandoc.Str(nm) }
+          if corr then table.insert(inl, pandoc.Str(dagger)) end
+          table.insert(blocks, para_with_style(inl, STYLE_COLLAB))
         end
       end
 
       -- Single correspondence line (first collab with corresp: yes and email)
       for _, c in ipairs(clist) do
-        if type(c) == "table" and c.t == "MetaMap" and is_yes(c.corresp) and c.email then
+        if type(c) == "table" and is_yes(c.corresp) and c.email then
           local em = stringify(c.email)
           local line = {
             pandoc.Str("† Correspondence: "),
@@ -317,7 +355,7 @@ local function make_frontmatter(meta)
   if meta.keywords then
     local kws = to_array(meta.keywords)
     if #kws > 0 then
-      table.insert(blocks, para_with_style({ pandoc.Str(KEYWORDS_LABEL .. table.concat(kws, "; ")) }, STYLE_KEYWORDS))
+      table.insert(blocks, para_with_style({ pandoc.Str(KEYWORDS_LABEL .. table.concat(kws, ", ")) }, STYLE_KEYWORDS))
     end
   end
 
