@@ -282,8 +282,75 @@ txt = re.sub(
 )
 
 # 6) Add punctuation to references according to Standard_Ref_Styles.xml
+def normalize_reference_edition(text: str) -> str:
+    clean = re.sub(r'\s+', ' ', text).strip()
+    lowered = clean.lower()
+    if re.search(r'\bed\.?\b', lowered):
+        return clean
+    return f'{clean} ed.'
+
+
+def normalize_reference_markup(ref_block: str) -> str:
+    """Normalize reference-only metadata before punctuation is added."""
+    # Journal guidance prefers <collab> for consortium/corporate authors.
+    ref_block = re.sub(
+        r'<string-name>(.*?)</string-name>',
+        r'<collab>\1</collab>',
+        ref_block,
+        flags=re.S,
+    )
+
+    # Strip ISSN values from rendered references; they create noisy run-on output.
+    ref_block = re.sub(
+        r'\s*<issn>[^<]*</issn>',
+        '',
+        ref_block,
+        flags=re.S | re.I,
+    )
+
+    # When citeproc emits a publication month for journal-like references, it
+    # is not wanted in the journal display and can concatenate awkwardly.
+    ref_block = re.sub(
+        r'(</year>)\s*<month>\s*([^<]+)\s*</month>(?=\s*(?:<volume|<issue|<fpage|<lpage|<pub-id|<publisher-name|<publisher-loc|</mixed-citation>))',
+        r'\1',
+        ref_block,
+        flags=re.S | re.I,
+    )
+
+    # Web references should render the access date in plain text per the
+    # journal example rather than as a raw nested date structure.
+    def replace_access_date(match: re.Match) -> str:
+        year = match.group(2)
+        month = match.group(3).zfill(2)
+        day = match.group(4).zfill(2)
+        return f'{match.group(1)}. Accessed: {year}-{month}-{day}.'
+
+    ref_block = re.sub(
+        r'(</year>)\s*<date-in-citation\b[^>]*content-type="access-date"[^>]*>\s*'
+        r'<year>(\d{4})</year>\s*<month>(\d{1,2})</month>\s*<day>(\d{1,2})</day>\s*'
+        r'</date-in-citation>',
+        replace_access_date,
+        ref_block,
+        flags=re.S | re.I,
+    )
+
+    # Bare edition values like "3rd" should render as "3rd ed."
+    def replace_edition(match: re.Match) -> str:
+        return f'<edition>{normalize_reference_edition(match.group(1))}</edition>'
+
+    ref_block = re.sub(
+        r'<edition>\s*([^<]+?)\s*</edition>',
+        replace_edition,
+        ref_block,
+        flags=re.S | re.I,
+    )
+
+    return ref_block
+
+
 def add_reference_punctuation(ref_block):
     """Add punctuation between elements in a reference."""
+    ref_block = normalize_reference_markup(ref_block)
     
     # Colon after person-group (authors/editors)
     ref_block = re.sub(
@@ -320,11 +387,12 @@ def add_reference_punctuation(ref_block):
     # Handle source element formatting based on publication type
     is_journal = 'publication-type="journal"' in ref_block
     is_book = 'publication-type="book"' in ref_block
+    is_data = 'publication-type="data"' in ref_block
     pub_ids_text = ''
 
-    # For journal references, move identifiers after the page range so output
-    # follows: year; volume(issue): fpage–lpage. <pub-id...>
-    if is_journal:
+    # Keep identifiers together and in journal-preferred order. Reinsert them
+    # after the page range when present, otherwise after the closest fallback.
+    if not is_data:
         pub_ids = re.findall(r'\s*<pub-id[^>]*>[^<]*</pub-id>', ref_block)
         if pub_ids:
             # Journal requires identifier order: pmid, doi, pmcid.
@@ -373,12 +441,41 @@ def add_reference_punctuation(ref_block):
             ref_block
         )
 
+    # If the source is followed by a publisher rather than a year, ensure it
+    # still gets a separator.
+    ref_block = re.sub(
+        r'(</source>)\s*(?=<publisher-name|<publisher-loc>)',
+        r'\1. ',
+        ref_block
+    )
+
     # Publisher/location/year separators to avoid concatenation in display layers.
+    if is_book:
+        # Books should render location before publisher.
+        ref_block = re.sub(
+            r'(<publisher-name>.*?</publisher-name>)\s*(<publisher-loc>.*?</publisher-loc>)',
+            r'\2\1',
+            ref_block,
+            flags=re.S | re.I,
+        )
+
     ref_block = re.sub(
         r'(</publisher-name>)\s*(?=<publisher-loc)',
         r'\1, ',
         ref_block
     )
+    if is_book:
+        ref_block = re.sub(
+            r'(</publisher-name>)\s*(?=<year|<month)',
+            r'\1; ',
+            ref_block
+        )
+    else:
+        ref_block = re.sub(
+            r'(</publisher-name>)\s*(?=<year|<month)',
+            r'\1. ',
+            ref_block
+        )
     ref_block = re.sub(
         r'(</publisher-name>)\s*(?=<year|<month|<volume|<issn|<ext-link)',
         r'\1 ',
@@ -412,7 +509,12 @@ def add_reference_punctuation(ref_block):
     # If the year is terminal, ensure it ends with a full stop so identifiers
     # or links do not concatenate directly onto the year in display layers.
     ref_block = re.sub(
-        r'(</year>)(?!\s*[.;])\s*(?=(<pub-id|<ext-link|</mixed-citation>))',
+        r'(</year>)(?!\s*[.;])\s*(?=(<pub-id|<ext-link|</mixed-citation>|Accessed:))',
+        r'\1. ',
+        ref_block
+    )
+    ref_block = re.sub(
+        r'(</year>)(?!\s*[.;])\s*(?=(<fpage|<lpage))',
         r'\1. ',
         ref_block
     )
@@ -430,6 +532,16 @@ def add_reference_punctuation(ref_block):
     )
     # If there is an issue but no page tags, still close the parenthesis.
     ref_block = re.sub(r'(</issue>)(?!\))', r'\1)', ref_block)
+    ref_block = re.sub(
+        r'(</issue>\))(?!\s*:)\s*(?=(<fpage|<lpage))',
+        r'\1: ',
+        ref_block
+    )
+    ref_block = re.sub(
+        r'(</volume>)(?!\s*\()(?=\s*(<fpage|<lpage))',
+        r'\1: ',
+        ref_block
+    )
 
     # Some records encode article numbers as fpage only, but Pandoc/citeproc can
     # still emit an empty <lpage>. Drop empty lpage tags so we do not generate a
@@ -497,6 +609,19 @@ def process_all_references(xml_text):
     )
 
 txt = process_all_references(txt)
+
+# Final reference-specific cleanups after punctuation has been added.
+txt = re.sub(
+    r'(</issue>\))\s*(<fpage|<lpage)',
+    r'\1: \2',
+    txt,
+)
+txt = re.sub(
+    r'(<source>\s*<italic>[^<]*\.</italic>\s*</source>)\.\s+(?=<publisher-name|<publisher-loc>)',
+    r'\1 ',
+    txt,
+    flags=re.S | re.I,
+)
 
 # 7) Wrap <source> contents in <italic>
 txt = re.sub(
@@ -596,6 +721,69 @@ txt = re.sub(
     convert_ref_uris,
     txt,
     flags=re.S
+)
+
+
+def relocate_reference_links(match: re.Match) -> str:
+    """Move 'Reference Source' links after the page range when present."""
+    ref_block = match.group(0)
+    links = re.findall(
+        r'\s*<ext-link\b[^>]*>Reference Source</ext-link>',
+        ref_block,
+        flags=re.S | re.I,
+    )
+    if not links:
+        return ref_block
+
+    ref_block = re.sub(
+        r'\s*<ext-link\b[^>]*>Reference Source</ext-link>',
+        '',
+        ref_block,
+        flags=re.S | re.I,
+    )
+    link_text = ' '.join(link.strip() for link in links)
+
+    if re.search(r'</lpage>\.', ref_block):
+        return re.sub(r'(</lpage>\.)', r'\1 ' + link_text, ref_block, count=1)
+    if re.search(r'</fpage>\.', ref_block):
+        return re.sub(r'(</fpage>\.)', r'\1 ' + link_text, ref_block, count=1)
+    if re.search(r'Accessed:\s*\d{4}-\d{2}-\d{2}\.', ref_block):
+        return re.sub(
+            r'(Accessed:\s*\d{4}-\d{2}-\d{2}\.)',
+            r'\1 ' + link_text,
+            ref_block,
+            count=1,
+        )
+    if re.search(r'</year>\.', ref_block):
+        return re.sub(r'(</year>\.)', r'\1 ' + link_text, ref_block, count=1)
+
+    return re.sub(
+        r'(</mixed-citation>)',
+        ' ' + link_text + r'\n      \1',
+        ref_block,
+        count=1,
+    )
+
+
+txt = re.sub(
+    r'<ref id="[^"]*">.*?</ref>',
+    relocate_reference_links,
+    txt,
+    flags=re.S,
+)
+
+# Re-run a couple of narrow spacing fixes now that URIs have been converted
+# and relocated, which changes the neighboring tag order in some refs.
+txt = re.sub(
+    r'(</issue>\))\s*(<fpage|<lpage)',
+    r'\1: \2',
+    txt,
+)
+txt = re.sub(
+    r'(<source>\s*<italic>[^<]*\.</italic>\s*</source>)\.\s+(?=<publisher-name|<publisher-loc>)',
+    r'\1 ',
+    txt,
+    flags=re.S | re.I,
 )
 
 

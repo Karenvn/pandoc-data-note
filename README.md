@@ -43,7 +43,7 @@ Filter order matters and must not be changed.
 6. `postprocess-jats.py` — sorts references, adds punctuation, restores italics
 
 **DOCX submission pipeline:**
-1. `inject_frontmatter.lua` — injects styled author/affiliation block
+1. `inject_frontmatter.lua` — injects styled author/affiliation/grant block
 2. `pandoc-crossref`
 3. `extract_figs_tables.lua` — moves figures and tables after references
 4. `--citeproc`

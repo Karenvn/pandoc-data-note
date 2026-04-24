@@ -1084,7 +1084,6 @@ $if(keywords)$
 \vspace{0.6\baselineskip}\noindent
 \textbf{Keywords:} $for(keywords)$$keywords$$sep$; $endfor$\par
 $endif$
-
 % --- blank header on the very first page, keep page number centred ---
 \newpairofpagestyles{firstpage}{
   \clearpairofpagestyles     % empty header + footer
@@ -1096,9 +1095,20 @@ $endif$
 % ======================================
 
 $if(abstract)$
-\begin{abstract}
-$abstract$
-\end{abstract}
+\vspace{0.8\baselineskip}\noindent
+\textbf{Abstract}\par
+\noindent $abstract$\par
+$endif$
+$if(funding_statement)$
+\vspace{0.8\baselineskip}\noindent
+\textbf{Grant information}\par
+$funding_statement$\par
+$else$
+$if(funder)$
+\vspace{0.8\baselineskip}\noindent
+\textbf{Grant information}\par
+$for(funder)$$funder.name$$if(funder.awards)$ [$for(funder.awards)$$funder.awards$$sep$, $endfor$]$endif$$sep$; $endfor$.\par
+$endif$
 $endif$
 
 

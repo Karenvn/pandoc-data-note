@@ -15,6 +15,7 @@ local AUTHOR_HEADING_TEXT = ""                 -- e.g. "Authors"
 local COLLAB_HEADING_TEXT = "Collaborators"
 local AFF_HEADING_TEXT    = "Affiliations"
 local KEYWORDS_LABEL      = "Keywords: "
+local GRANT_HEADING_TEXT  = "Grant information"
 
 -- Paragraph styles (must exist in reference DOCX; else Word falls back to Normal)
 local STYLE_HEADING    = "FM-Heading"
@@ -25,6 +26,7 @@ local STYLE_AFFIL      = "FM-Affiliation"
 local STYLE_COLLAB     = STYLE_NAME
 local STYLE_CORRESP    = STYLE_ROLE
 local STYLE_KEYWORDS   = "FM-Keywords"
+local STYLE_GRANT      = STYLE_AFFIL
 
 local stringify = pandoc.utils.stringify
 
@@ -64,6 +66,60 @@ local function to_array(x)
     return { x }
   end
   return {}
+end
+
+local function normalize_meta_list(x)
+  if not x then
+    return {}
+  end
+  if type(x) == "table" and x.t == "MetaList" then
+    local out = {}
+    for i = 1, #x do out[i] = x[i] end
+    return out
+  end
+  if type(x) == "table" and x.t == nil then
+    local out = {}
+    for i = 1, #x do out[i] = x[i] end
+    return out
+  end
+  return { x }
+end
+
+local function build_funding_text(meta)
+  local statement = stringify(meta.funding_statement or meta["funding-statement"] or "")
+  if statement ~= "" then
+    return statement
+  end
+
+  local parts = {}
+  for _, funder in ipairs(normalize_meta_list(meta.funder or meta.funders)) do
+    if type(funder) == "table" then
+      local name = stringify(funder.name or funder.funding_source or "")
+      local awards = to_array(funder.awards or funder["award-id"] or funder.award)
+      if name ~= "" then
+        local part = name
+        if #awards > 0 then
+          part = part .. " [" .. table.concat(awards, ", ") .. "]"
+        end
+        table.insert(parts, part)
+      end
+    else
+      local part = stringify(funder)
+      if part ~= "" then
+        table.insert(parts, part)
+      end
+    end
+  end
+
+  if #parts == 0 then
+    return ""
+  end
+
+  local text = table.concat(parts, "; ")
+  if not text:match("[%.!?]$") then
+    text = text .. "."
+  end
+  return text
 end
 
 -- Extract roles from either simple format or credit-based format
@@ -357,6 +413,15 @@ local function make_frontmatter(meta)
     if #kws > 0 then
       table.insert(blocks, para_with_style({ pandoc.Str(KEYWORDS_LABEL .. table.concat(kws, ", ")) }, STYLE_KEYWORDS))
     end
+  end
+
+  -- Grant information
+  local funding_text = build_funding_text(meta)
+  if funding_text ~= "" then
+    if GRANT_HEADING_TEXT ~= "" then
+      table.insert(blocks, para_with_style({ pandoc.Str(GRANT_HEADING_TEXT) }, STYLE_HEADING))
+    end
+    table.insert(blocks, para_with_style({ pandoc.Str(funding_text) }, STYLE_GRANT))
   end
 
   return blocks

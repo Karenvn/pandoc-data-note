@@ -9,14 +9,29 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 TEMPLATES="$REPO_ROOT/templates"
 FILTERS="$REPO_ROOT/filters"
 
+caller_cwd="$(pwd)"
 input="${1:?Usage: gn-docx-sub INPUT.md [OUTPUT.docx]}"
-output="${2:-${input%.md}_sub.docx}"
+case "$input" in
+  /*) input_abs="$input" ;;
+  *) input_abs="$caller_cwd/$input" ;;
+esac
+input_dir="$(cd "$(dirname "$input_abs")" && pwd)"
+input_file="$(basename "$input_abs")"
 
-pandoc "$input" \
-  --lua-filter "$FILTERS/inject_frontmatter.lua" \
-  --filter pandoc-crossref \
-  --lua-filter "$FILTERS/extract_figs_tables.lua" \
-  --citeproc \
-  --csl="$TEMPLATES/tol_custom-author-date.csl" \
-  --reference-doc "$TEMPLATES/custom-template.docx" \
-  -o "$output"
+output="${2:-${input_abs%.md}_sub.docx}"
+case "$output" in
+  /*) output_abs="$output" ;;
+  *) output_abs="$caller_cwd/$output" ;;
+esac
+
+(
+  cd "$input_dir"
+  pandoc "$input_file" \
+    --lua-filter "$FILTERS/inject_frontmatter.lua" \
+    --filter pandoc-crossref \
+    --lua-filter "$FILTERS/extract_figs_tables.lua" \
+    --citeproc \
+    --csl="$TEMPLATES/tol_custom-author-date.csl" \
+    --reference-doc "$TEMPLATES/custom-template.docx" \
+    -o "$output_abs"
+)
